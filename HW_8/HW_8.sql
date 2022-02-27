@@ -113,13 +113,45 @@ WHEN NOT MATCHED THEN
 
 */
 
-exec master..xp_cmdshell 'bcp "[WideWorldImporters].Sales.InvoiceLines" out  "C:\Users\user\Desktop\Курс MSSQL\InvoiceLines1.txt" -T -w -t, -S KorshunovaA\SQL2017' 
+-- выгрузка в файл работает только через cmd. 
+exec master..xp_cmdshell 'bcp WideWorldImporters.Sales.InvoiceLines out C:\Users\user\Desktop\InvoiceLines.txt -T -w -t, -S KorshunovaA\SQL2017'
 
-/*
-Результат: 
-SQLState = S1000, NativeError = 0
-Error = [Microsoft][ODBC Driver 13 for SQL Server] Не удается открыть файл данных BCP на сервере.
-NULL
+drop table if exists [Sales].[InvoiceLines_BulkDemo];
 
-Подскажите, как исправить?
-*/
+CREATE TABLE [Sales].[InvoiceLines_BulkDemo](
+	[InvoiceLineID] [int] NOT NULL,
+	[InvoiceID] [int] NOT NULL,
+	[StockItemID] [int] NOT NULL,
+	[Description] [nvarchar](100) NOT NULL,
+	[PackageTypeID] [int] NOT NULL,
+	[Quantity] [int] NOT NULL,
+	[UnitPrice] [decimal](18, 2) NULL,
+	[TaxRate] [decimal](18, 3) NOT NULL,
+	[TaxAmount] [decimal](18, 2) NOT NULL,
+	[LineProfit] [decimal](18, 2) NOT NULL,
+	[ExtendedPrice] [decimal](18, 2) NOT NULL,
+	[LastEditedBy] [int] NOT NULL,
+	[LastEditedWhen] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_Sales_InvoiceLines_BulkDemo] PRIMARY KEY CLUSTERED 
+(
+	[InvoiceLineID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [USERDATA]
+) ON [USERDATA]
+----
+
+
+
+	BULK INSERT [WideWorldImporters].[Sales].[InvoiceLines_BulkDemo]
+				   FROM "C:\Users\user\Desktop\InvoiceLines.txt"
+				   WITH 
+					 (
+						BATCHSIZE = 1000, 
+						DATAFILETYPE = 'widechar',
+						FIELDTERMINATOR = '@eu&$1&',
+						ROWTERMINATOR ='\n',
+						KEEPNULLS,
+						TABLOCK        
+					  );
+
+
+select Count(*) from [Sales].[InvoiceLines_BulkDemo];
